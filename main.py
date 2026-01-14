@@ -1,13 +1,13 @@
 from fastapi import FastAPI
-from database import engine, Base
 from twilio_webhook import router as whatsapp_router
+from database import Base, engine
 
 app = FastAPI(title="FlowStack Backend")
 
-# Create database tables
+# Create SQLite tables
 Base.metadata.create_all(bind=engine)
 
-# Include WhatsApp webhook router
+# Include WhatsApp router
 app.include_router(whatsapp_router, prefix="/webhook")
 
 @app.get("/")
