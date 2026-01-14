@@ -9,3 +9,4 @@ app.include_router(whatsapp_router, prefix="/webhook")
 @app.get("/")
 def health():
     return {"status": "FlowStack backend running"}
+
