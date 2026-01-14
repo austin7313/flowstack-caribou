@@ -3,9 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 
-# Replace this with your Supabase/Postgres URL
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://username:password@host:port/dbname")
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./test.db")  # fallback to sqlite for testing
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
