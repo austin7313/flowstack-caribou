@@ -12,12 +12,6 @@ async def whatsapp_webhook(
     From: str = Form(...),
     ProfileName: str = Form(None)
 ):
-    """
-    Minimal WhatsApp webhook
-    - Logs message
-    - Always replies
-    """
-
     customer_phone = From.replace("whatsapp:", "").replace("+", "")
     customer_name = ProfileName or "Unknown"
     message = Body.strip()
@@ -36,9 +30,6 @@ async def whatsapp_webhook(
             "raw_message": message,
             "created_at": datetime.utcnow().isoformat()
         }).execute()
-
-        print("✅ Message saved")
-
     except Exception as e:
         print("❌ Supabase error:", e)
 
