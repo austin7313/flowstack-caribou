@@ -1,8 +1,6 @@
-fastapi
-uvicorn
-python-dotenv
-sqlalchemy
-psycopg2-binary
-requests
-twilio
-python-multipart
+fastapi==0.113.0
+uvicorn[standard]==0.23.2
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.7
+twilio==8.14.0
+python-multipart==0.0.6
