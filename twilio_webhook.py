@@ -6,7 +6,7 @@ from typing import Dict
 
 router = APIRouter()
 
-# In-memory sessions to track orders per phone (simple approach)
+# In-memory sessions to track orders per phone
 sessions: Dict[str, Dict] = {}
 
 MENU_ITEMS = {
@@ -23,7 +23,6 @@ async def whatsapp_webhook(
     user_msg = Body.strip().upper()
     response = MessagingResponse()
     
-    # Initialize session if not exists
     if phone not in sessions:
         sessions[phone] = {"items": [], "order_started": False}
 
@@ -41,8 +40,6 @@ async def whatsapp_webhook(
     elif user_msg == "PAY":
         if session["items"]:
             total = sum(MENU_ITEMS[item] for item in session["items"])
-            
-            # Save order to DB
             db = SessionLocal()
             order = Order(
                 customer_phone=phone,
@@ -51,10 +48,7 @@ async def whatsapp_webhook(
             )
             db.add(order)
             db.commit()
-            
             response.message(f"✅ Order confirmed!\nItems: {', '.join(session['items'])}\nTotal: Ksh {total}\n\nYou will receive an M-Pesa prompt shortly.")
-            
-            # Reset session
             sessions[phone] = {"items": [], "order_started": False}
         else:
             response.message("⚠️ You haven't added any items yet. Reply with item names from MENU.")
