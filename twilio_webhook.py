@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Form
-from starlette.responses import Response
+from fastapi.responses import PlainTextResponse
 from twilio.twiml.messaging_response import MessagingResponse
 
 router = APIRouter()
@@ -9,15 +9,15 @@ async def whatsapp_webhook(
     Body: str = Form(...),
     From: str = Form(...)
 ):
-    msg = Body.strip().lower()
+    incoming = Body.strip().lower()
     twiml = MessagingResponse()
 
-    if msg in ["hi", "hello", "hey"]:
+    if incoming in ["hi", "hello", "hey"]:
         twiml.message(
             "👋 Welcome to FlowStack!\n\n"
-            "Reply MENU to see items."
+            "Reply MENU to see options."
         )
-    elif msg == "menu":
+    elif incoming == "menu":
         twiml.message(
             "🍽 MENU\n"
             "Burger – 500\n"
@@ -27,12 +27,14 @@ async def whatsapp_webhook(
     else:
         twiml.message("❓ Unknown command. Reply MENU.")
 
-    xml_response = str(twiml)
+    xml = str(twiml)
 
-    return Response(
-        content=xml_response,
-        status_code=200,
+    return PlainTextResponse(
+        content=xml,
+        media_type="text/xml",
         headers={
-            "Content-Type": "text/xml"
+            "Content-Type": "text/xml",
+            "Content-Encoding": "identity",
+            "Cache-Control": "no-store"
         }
     )
