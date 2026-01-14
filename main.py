@@ -4,10 +4,10 @@ from twilio_webhook import router as whatsapp_router
 
 app = FastAPI(title="FlowStack Backend")
 
-# Create tables
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
-# Include WhatsApp router
+# Include Twilio webhook router
 app.include_router(whatsapp_router, prefix="/webhook")
 
 @app.get("/")
