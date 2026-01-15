@@ -17,19 +17,23 @@ Fries – 200
 Reply ORDER to proceed.
 """
 
+GREETINGS = ["hi", "hello", "hey", "yo", "hiya", "good morning", "good afternoon"]
+
 def generate_order_id():
     return f"ORD{random.randint(100000, 999999)}"
 
 def is_greeting(msg: str):
-    return msg in ["hi", "hello", "hey"]
+    msg = msg.lower().strip()
+    return any(greet in msg for greet in GREETINGS)
 
 def is_menu(msg: str):
-    return msg == "menu"
+    return msg.lower().strip() == "menu"
 
 def is_order(msg: str):
-    return msg == "order"
+    return msg.lower().strip() == "order"
 
 def parse_food(msg: str):
+    msg = msg.lower()
     items = []
     amount = 0
 
@@ -82,8 +86,7 @@ async def whatsapp_webhook(
     if order:
         order_id = generate_order_id()
 
-        # Here you can add database insert later if ready
-        # For now, just send response
+        # TODO: Add Supabase insert here if needed later
 
         response.message(
             f"""✅ Order received!
