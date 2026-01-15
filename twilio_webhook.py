@@ -1,99 +1,62 @@
-import os
 from fastapi import APIRouter, Form
 from twilio.twiml.messaging_response import MessagingResponse
-from supabase_client import supabase
 from datetime import datetime
+from supabase_rest import insert_order
 import random
 
 router = APIRouter()
 
-# -------- CONFIG --------
-RESTAURANT = {
-    "name": "CARIBOU KARIBU",
-    "paybill": "247247"
-}
-
-ENTRY_WORDS = ["hi", "hello", "hey", "start", "menu"]
-ORDER_WORDS = ["order"]
-
-MENU_TEXT = """🍽 MENU
+MENU = """🍽 MENU
 Burger – 500
 Fries – 200
 
-Reply ORDER to proceed."""
+Reply ORDER to proceed.
+"""
 
-# -------- HELPERS --------
-def generate_order_id():
-    return f"ORD{random.randint(100000, 999999)}"
+def gen_order_id():
+    return f"ORD{random.randint(100000,999999)}"
 
-def normalize(text: str):
-    return text.lower().strip()
-
-def parse_items(message: str):
-    items = []
-    amount = 0
-    msg = message.lower()
-
-    if "burger" in msg:
-        items.append("Burger")
-        amount += 500
-
-    if "fries" in msg:
-        items.append("Fries")
-        amount += 200
-
-    return items, amount
-
-# -------- WEBHOOK --------
 @router.post("/whatsapp")
 async def whatsapp_webhook(
     Body: str = Form(...),
     From: str = Form(...)
 ):
-    msg = normalize(Body)
-    phone = From.replace("whatsapp:", "").replace("+", "")
+    msg = Body.strip().lower()
+    resp = MessagingResponse()
 
-    response = MessagingResponse()
+    # greetings
+    if msg in ["hi", "hello", "hey"]:
+        resp.message("👋 Welcome to FlowStack!\nReply MENU to see options.")
+        return str(resp)
 
-    # 1️⃣ ENTRY POINT (hi / hello / menu)
-    if msg in ENTRY_WORDS:
-        response.message(f"👋 Welcome to {RESTAURANT['name']}!\n\n{MENU_TEXT}")
-        return str(response)
+    if msg == "menu":
+        resp.message(MENU)
+        return str(resp)
 
-    # 2️⃣ ORDER INTENT
-    if msg in ORDER_WORDS:
-        response.message("📝 What would you like to order?\nExample: burger and fries")
-        return str(response)
+    if msg == "order":
+        order_id = gen_order_id()
 
-    # 3️⃣ FOOD SELECTION
-    items, amount = parse_items(msg)
-
-    if items:
-        order_id = generate_order_id()
-
-        supabase.table("orders").insert({
+        order = {
             "id": order_id,
-            "customer_phone": phone,
-            "items": " + ".join(items),
-            "amount": amount,
+            "customer_phone": From.replace("whatsapp:", ""),
+            "items": "Burger",
+            "amount": 500,
             "status": "awaiting_payment",
             "created_at": datetime.utcnow().isoformat()
-        }).execute()
+        }
 
-        response.message(
-            f"""✅ Order Received!
+        await insert_order(order)
 
-📦 Items: {' + '.join(items)}
-💰 Total: KES {amount}
+        resp.message(
+            f"""✅ Order received!
 
-💳 Pay via M-Pesa:
-Paybill: {RESTAURANT['paybill']}
+💰 Pay KES 500
+Paybill: 247247
 Account: {order_id}
 
 Reply DONE after payment."""
         )
-        return str(response)
+        return str(resp)
 
-    # 4️⃣ FALLBACK (VERY RARE)
-    response.message("❓ I didn’t understand that.\nType MENU to start.")
-    return str(response)
+    resp.message("❓ Unknown command. Reply MENU.")
+    return str(resp)
