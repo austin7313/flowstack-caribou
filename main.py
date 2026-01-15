@@ -1,36 +1,36 @@
-import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from twilio_webhook import router
+from twilio_webhook import router as whatsapp_router
 
 app = FastAPI(
-    title="FlowStack",
+    title="FlowStack Backend",
+    description="WhatsApp tells businesses what to do next",
     version="1.0.0"
 )
 
+# Allow dashboard + external tools later
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/webhook")
+# WhatsApp webhook routes
+app.include_router(
+    whatsapp_router,
+    prefix="/webhook",
+    tags=["WhatsApp"]
+)
 
 @app.get("/")
-def health():
+def health_check():
+    """
+    Render health check endpoint
+    """
     return {
-        "status": "ok",
-        "service": "FlowStack backend running"
+        "status": "✅ FlowStack is running",
+        "webhook": "/webhook/whatsapp",
+        "commands": ["hi", "hello", "hey", "menu", "order"]
     }
-
-@app.get("/orders")
-def get_orders():
-    from supabase_client import supabase
-    data = supabase.table("orders").select("*").order("created_at", desc=True).execute()
-    return data.data
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
