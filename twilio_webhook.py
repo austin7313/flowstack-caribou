@@ -1,11 +1,22 @@
 from fastapi import APIRouter, Form
 from twilio.twiml.messaging_response import MessagingResponse
-from supabase_client import supabase
+from supabase import create_client, Client
 from datetime import datetime
 import random
+import os
 
 router = APIRouter()
 
+# ✅ Supabase setup (directly using Render env variables)
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("Missing Supabase environment variables")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Restaurant & Menu
 RESTAURANT = {
     "name": "CARIBOU KARIBU",
     "paybill": "247247"
@@ -18,27 +29,27 @@ Fries – 200
 Reply ORDER to proceed.
 """
 
+# Utility functions
 def generate_order_id():
     return f"ORD{random.randint(100000, 999999)}"
 
 def is_greeting(msg: str):
-    return msg.lower() in ["hi", "hello", "hey"]
+    return msg in ["hi", "hello", "hey"]
 
 def is_menu(msg: str):
-    return msg.lower() == "menu"
+    return msg == "menu"
 
 def is_order(msg: str):
-    return msg.lower() == "order"
+    return msg == "order"
 
 def parse_food(msg: str):
     items = []
     amount = 0
 
-    msg_lower = msg.lower()
-    if "burger" in msg_lower:
+    if "burger" in msg:
         items.append("Burger")
         amount += 500
-    if "fries" in msg_lower:
+    if "fries" in msg:
         items.append("Fries")
         amount += 200
 
@@ -50,14 +61,14 @@ def parse_food(msg: str):
         "amount": amount
     }
 
+# WhatsApp webhook endpoint
 @router.post("/whatsapp")
 async def whatsapp_webhook(
     Body: str = Form(...),
     From: str = Form(...),
 ):
-    message = Body.strip()
+    message = Body.strip().lower()
     customer_phone = From.replace("whatsapp:", "").replace("+", "")
-
     response = MessagingResponse()
 
     # 1️⃣ GREETING
