@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, Response
 from twilio.twiml.messaging_response import MessagingResponse
+from datetime import datetime
 import random
 
 router = APIRouter()
@@ -18,9 +19,6 @@ Reply ORDER to proceed.
 
 def generate_order_id():
     return f"ORD{random.randint(100000, 999999)}"
-
-def normalize(msg: str) -> str:
-    return msg.strip().lower()
 
 def is_greeting(msg: str):
     return msg in ["hi", "hello", "hey"]
@@ -55,7 +53,9 @@ async def whatsapp_webhook(
     Body: str = Form(...),
     From: str = Form(...),
 ):
-    message = normalize(Body)
+    message = Body.strip().lower()
+    customer_phone = From.replace("whatsapp:", "").replace("+", "")
+
     response = MessagingResponse()
 
     # 1️⃣ GREETING
@@ -63,24 +63,27 @@ async def whatsapp_webhook(
         response.message(
             "👋 Welcome to FlowStack!\n\nReply MENU to see options."
         )
-        return str(response)
+        return Response(content=str(response), media_type="application/xml")
 
     # 2️⃣ MENU
     if is_menu(message):
         response.message(MENU_TEXT)
-        return str(response)
+        return Response(content=str(response), media_type="application/xml")
 
     # 3️⃣ ORDER INTENT
     if is_order(message):
         response.message(
-            "📝 What would you like to order?\n\nReply with:\nBurger\nFries\nBurger + Fries"
+            "📝 What would you like to order?\n\nReply with items e.g:\nBurger\nFries\nBurger + Fries"
         )
-        return str(response)
+        return Response(content=str(response), media_type="application/xml")
 
-    # 4️⃣ FOOD SELECTION
+    # 4️⃣ FOOD MESSAGE
     order = parse_food(message)
     if order:
         order_id = generate_order_id()
+
+        # Here you can add database insert later if ready
+        # For now, just send response
 
         response.message(
             f"""✅ Order received!
@@ -93,10 +96,10 @@ async def whatsapp_webhook(
 
 Reply DONE after payment."""
         )
-        return str(response)
+        return Response(content=str(response), media_type="application/xml")
 
     # 5️⃣ FALLBACK
     response.message(
         "❓ I didn’t understand that.\n\nReply MENU to see options."
     )
-    return str(response)
+    return Response(content=str(response), media_type="application/xml")
