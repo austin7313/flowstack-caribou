@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request
+from fastapi.responses import Response
 from twilio.twiml.messaging_response import MessagingResponse
 from datetime import datetime
 import random
@@ -57,6 +58,16 @@ def parse_food(msg: str):
     }
 
 
+def twilio_xml(response: MessagingResponse):
+    """
+    Ensures Twilio receives proper XML + Content-Type
+    """
+    return Response(
+        content=str(response),
+        media_type="application/xml"
+    )
+
+
 @router.post("/whatsapp")
 async def whatsapp_webhook(request: Request):
     # 🔐 Supabase is created ONLY when a request comes in
@@ -73,19 +84,19 @@ async def whatsapp_webhook(request: Request):
         response.message(
             "👋 Welcome to CARIBOU KARIBU!\n\nReply MENU to see options."
         )
-        return str(response)
+        return twilio_xml(response)
 
     # 2️⃣ MENU
     if is_menu(message):
         response.message(MENU_TEXT)
-        return str(response)
+        return twilio_xml(response)
 
     # 3️⃣ ORDER INTENT
     if is_order(message):
         response.message(
             "📝 What would you like to order?\n\nExample:\nBurger\nFries\nBurger + Fries"
         )
-        return str(response)
+        return twilio_xml(response)
 
     # 4️⃣ FOOD MESSAGE
     order = parse_food(message)
@@ -112,10 +123,10 @@ async def whatsapp_webhook(request: Request):
 
 Reply DONE after payment."""
         )
-        return str(response)
+        return twilio_xml(response)
 
     # 5️⃣ FALLBACK
     response.message(
         "❓ I didn’t understand that.\n\nReply MENU to see options."
     )
-    return str(response)
+    return twilio_xml(response)
