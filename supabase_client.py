@@ -1,25 +1,11 @@
 import os
 from supabase import create_client, Client
 
-_SUPABASE: Client | None = None
-
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 def get_supabase() -> Client:
-    """
-    Lazily initialize Supabase client.
-    Prevents app from crashing at import time if env vars are missing.
-    """
-    global _SUPABASE
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise RuntimeError("Supabase environment variables not set")
 
-    if _SUPABASE is None:
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_KEY")
-
-        if not supabase_url or not supabase_key:
-            raise RuntimeError(
-                "SUPABASE_URL or SUPABASE_KEY environment variables are missing"
-            )
-
-        _SUPABASE = create_client(supabase_url, supabase_key)
-
-    return _SUPABASE
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
