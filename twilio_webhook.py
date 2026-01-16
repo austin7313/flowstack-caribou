@@ -1,22 +1,12 @@
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Request
 from twilio.twiml.messaging_response import MessagingResponse
-from supabase import create_client, Client
 from datetime import datetime
 import random
-import os
+
+from supabase_client import get_supabase
 
 router = APIRouter()
 
-# ✅ Supabase setup (directly using Render env variables)
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("Missing Supabase environment variables")
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Restaurant & Menu
 RESTAURANT = {
     "name": "CARIBOU KARIBU",
     "paybill": "247247"
@@ -29,18 +19,22 @@ Fries – 200
 Reply ORDER to proceed.
 """
 
-# Utility functions
+
 def generate_order_id():
     return f"ORD{random.randint(100000, 999999)}"
+
 
 def is_greeting(msg: str):
     return msg in ["hi", "hello", "hey"]
 
+
 def is_menu(msg: str):
     return msg == "menu"
 
+
 def is_order(msg: str):
     return msg == "order"
+
 
 def parse_food(msg: str):
     items = []
@@ -49,6 +43,7 @@ def parse_food(msg: str):
     if "burger" in msg:
         items.append("Burger")
         amount += 500
+
     if "fries" in msg:
         items.append("Fries")
         amount += 200
@@ -61,20 +56,22 @@ def parse_food(msg: str):
         "amount": amount
     }
 
-# WhatsApp webhook endpoint
+
 @router.post("/whatsapp")
-async def whatsapp_webhook(
-    Body: str = Form(...),
-    From: str = Form(...),
-):
-    message = Body.strip().lower()
-    customer_phone = From.replace("whatsapp:", "").replace("+", "")
+async def whatsapp_webhook(request: Request):
+    # 🔐 Supabase is created ONLY when a request comes in
+    supabase = get_supabase()
+
+    form = await request.form()
+    message = form.get("Body", "").strip().lower()
+    from_number = form.get("From", "").replace("whatsapp:", "").replace("+", "")
+
     response = MessagingResponse()
 
     # 1️⃣ GREETING
     if is_greeting(message):
         response.message(
-            "👋 Welcome to FlowStack!\n\nReply MENU to see options."
+            "👋 Welcome to CARIBOU KARIBU!\n\nReply MENU to see options."
         )
         return str(response)
 
@@ -86,7 +83,7 @@ async def whatsapp_webhook(
     # 3️⃣ ORDER INTENT
     if is_order(message):
         response.message(
-            "📝 What would you like to order?\n\nReply with items e.g:\nBurger\nFries\nBurger + Fries"
+            "📝 What would you like to order?\n\nExample:\nBurger\nFries\nBurger + Fries"
         )
         return str(response)
 
@@ -97,7 +94,7 @@ async def whatsapp_webhook(
 
         supabase.table("orders").insert({
             "id": order_id,
-            "customer_phone": customer_phone,
+            "customer_phone": from_number,
             "items": order["items"],
             "amount": order["amount"],
             "status": "awaiting_payment",
