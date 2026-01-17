@@ -1,13 +1,18 @@
-from supabase import create_client
-from settings import settings
+import os
+from supabase import create_client, Client
 
-_supabase = None
+_supabase: Client | None = None
 
-def get_supabase():
+def get_supabase() -> Client:
     global _supabase
+
     if _supabase is None:
-        _supabase = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_KEY
-        )
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_KEY")
+
+        if not url or not key:
+            raise RuntimeError("Supabase env vars missing")
+
+        _supabase = create_client(url, key)
+
     return _supabase
