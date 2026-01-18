@@ -1,10 +1,13 @@
-from fastapi import FastAPI
-from twilio_webhook import router
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
+from twilio_webhook import router as whatsapp_router
 
-app = FastAPI()
+app = FastAPI(title="ChatPESA")
 
-app.include_router(router)
-
+# Health check (VERY important)
 @app.get("/")
 def root():
-    return {"status": "CHATPESA alive"}
+    return {"status": "ChatPESA live"}
+
+# Register WhatsApp webhook
+app.include_router(whatsapp_router)
