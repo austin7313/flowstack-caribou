@@ -4,16 +4,16 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 router = APIRouter()
 
-@router.post("/whatsapp")
+@router.post("/webhook/whatsapp")
 async def whatsapp_webhook(request: Request):
     form = await request.form()
-    incoming_msg = form.get("Body", "").lower()
+    body = form.get("Body", "").lower()
 
     resp = MessagingResponse()
 
-    if incoming_msg.startswith("join"):
+    if body.startswith("join"):
         resp.message("✅ Sandbox connected. CHATPESA is live.")
     else:
-        resp.message("CHATPESA active. Send HELP.")
+        resp.message("CHATPESA active. Send JOIN CHATPESA")
 
-    return Response(content=str(resp), media_type="application/xml")
+    return Response(str(resp), media_type="application/xml")
