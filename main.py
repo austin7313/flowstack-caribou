@@ -1,10 +1,10 @@
 from fastapi import FastAPI
-from twilio_webhook import router as whatsapp_router
+from twilio_webhook import router
 
 app = FastAPI()
 
-app.include_router(whatsapp_router, prefix="/webhook")
+app.include_router(router)
 
 @app.get("/")
-def health():
-    return {"status": "ok"}
+def root():
+    return {"status": "CHATPESA alive"}
