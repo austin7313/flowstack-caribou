@@ -1,13 +1,23 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
-from twilio_webhook import router as whatsapp_router
+from twilio.twiml.messaging_response import MessagingResponse
 
 app = FastAPI(title="ChatPESA")
 
-# Health check (VERY important)
 @app.get("/")
 def root():
-    return {"status": "ChatPESA live"}
+    return {"status": "CHATPESA alive"}
 
-# Register WhatsApp webhook
-app.include_router(whatsapp_router)
+@app.post("/webhook/whatsapp")
+async def whatsapp_webhook(request: Request):
+    form = await request.form()
+    incoming_msg = form.get("Body", "").strip().lower()
+
+    resp = MessagingResponse()
+
+    if incoming_msg.startswith("join"):
+        resp.message("✅ ChatPESA connected. Payments coming next.")
+    else:
+        resp.message("👋 ChatPESA is live.")
+
+    return PlainTextResponse(str(resp), media_type="application/xml")
